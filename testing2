@@ -82,7 +82,7 @@ run_update_bookstack_env() {
 
 
 
-run_package_installs >> "$LOGPATH" 2>&1
+run_package_installs
 run_bookstack_download >> "$LOGPATH" 2>&1
 run_install_composer >> "$LOGPATH" 2>&1
 run_install_bookstack_composer_deps >> "$LOGPATH" 2>&1
