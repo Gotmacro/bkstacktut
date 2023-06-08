@@ -73,7 +73,7 @@ run_update_bookstack_env() {
   cd "$BOOKSTACK_DIR" || exit
   cp .env.example .env
   sed -i.bak "s@APP_URL=.*\$@APP_URL=http://$DOMAIN@" .env
-  sed -i.bak 's/DB_DATABASE=.*$/DB_DATABASE=$MYSQL/' .env
+  sed -i.bak "s/DB_DATABASE=.*\$/DB_DATABASE=$MYSQL/" .env
   sed -i.bak 's/DB_USERNAME=.*$/DB_USERNAME=bookstack/' .env
   sed -i.bak "s/DB_PASSWORD=.*\$/DB_PASSWORD=$DB_PASS/" .env
   # Generate the application key
