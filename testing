@@ -41,5 +41,8 @@ function run_bookstack_download() {
   git clone https://github.com/BookStackApp/BookStack.git --branch release --single-branch bookstack
 }
 
-echo "end script"
+error_out
+info_msg
+run_package_installs
+run_bookstack_download
 
