@@ -21,6 +21,15 @@ LOGPATH=$(realpath "bookstack_install_$(date +%s).log")
 # Get the current user running the script
 SCRIPT_USER="${SUDO_USER:-$USER}"
 
+error_out() {
+  echo "ERROR: $1" | tee -a "$LOGPATH" 1>&2
+  exit 1
+}
+
+info_msg() {
+  echo "$1" | tee -a "$LOGPATH"
+}
+
 
 run_package_installs() {
   apt update
