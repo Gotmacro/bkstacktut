@@ -1,0 +1,80 @@
+#!/bin/bash
+
+DB_PASS="$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 13)"
+
+BOOKSTACK_DIR="/var/www/bookstack"
+
+DOMAIN="wiki2.sdshmlb.com"
+
+MYSQL="10.2.0.2"
+
+LOGPATH=$(realpath "bookstack_install_$(date +%s).log")
+
+# Get the current user running the script
+SCRIPT_USER="${SUDO_USER:-$USER}"
+
+# Get the current machine IP address
+CURRENT_IP=$(ip addr | grep 'state UP' -A4 | grep 'inet ' | awk '{print $2}' | cut -f1  -d'/')
+
+LOGPATH=$(realpath "bookstack_install_$(date +%s).log")
+
+# Get the current user running the script
+SCRIPT_USER="${SUDO_USER:-$USER}"
+
+
+run_package_installs() {
+  apt update
+  apt install -y git unzip apache2 php8.1 curl php8.1-curl php8.1-mbstring php8.1-ldap \
+  php8.1-xml php8.1-zip php8.1-gd php8.1-mysql libapache2-mod-php8.1
+}
+
+# Download BookStack
+run_bookstack_download() {
+  cd /var/www || exit
+  git clone https://github.com/BookStackApp/BookStack.git --branch release --single-branch bookstack
+}
+
+run_install_composer() {
+  EXPECTED_CHECKSUM="$(php -r 'copy("https://composer.github.io/installer.sig", "php://stdout");')"
+  php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+  ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+
+  if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]
+  then
+      >&2 echo 'ERROR: Invalid composer installer checksum'
+      rm composer-setup.php
+      exit 1
+  fi
+
+  php composer-setup.php --quiet
+  rm composer-setup.php
+
+  # Move composer to global installation
+  mv composer.phar /usr/local/bin/composer
+}
+
+# Install BookStack composer dependencies
+run_install_bookstack_composer_deps() {
+  cd "$BOOKSTACK_DIR" || exit
+  export COMPOSER_ALLOW_SUPERUSER=1
+  php /usr/local/bin/composer install --no-dev --no-plugins
+}
+
+run_update_bookstack_env() {
+  cd "$BOOKSTACK_DIR" || exit
+  cp .env.example .env
+  sed -i.bak "s@APP_URL=.*\$@APP_URL=http://$DOMAIN@" .env
+  sed -i.bak 's/DB_DATABASE=.*$/DB_DATABASE=$MYSQL/' .env
+  sed -i.bak 's/DB_USERNAME=.*$/DB_USERNAME=bookstack/' .env
+  sed -i.bak "s/DB_PASSWORD=.*\$/DB_PASSWORD=$DB_PASS/" .env
+  # Generate the application key
+  php artisan key:generate --no-interaction --force
+}
+
+
+
+run_package_installs >> "$LOGPATH" 2>&1
+run_bookstack_download >> "$LOGPATH" 2>&1
+run_install_composer >> "$LOGPATH" 2>&1
+run_install_bookstack_composer_deps >> "$LOGPATH" 2>&1
+run_update_bookstack_env >> "$LOGPATH" 2>&1
