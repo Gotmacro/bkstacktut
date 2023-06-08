@@ -1,0 +1,8 @@
+
+
+
+run_database_setup() {
+  mysql -u root --execute="CREATE DATABASE bookstack;"
+  mysql -u root --execute="CREATE USER 'bookstack'@'localhost' IDENTIFIED WITH mysql_native_password BY '$DB_PASS';"
+  mysql -u root --execute="GRANT ALL ON bookstack.* TO 'bookstack'@'localhost';FLUSH PRIVILEGES;"
+}
